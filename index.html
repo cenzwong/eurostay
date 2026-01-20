@@ -72,10 +72,10 @@
                 <p class="text-slate-500">Filter by the type of experience you need.</p>
             </div>
             <div id="filters" class="flex flex-wrap gap-2">
-                <button onclick="filterBrands('all')" class="filter-btn active bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium">All</button>
-                <button onclick="filterBrands('tech')" class="filter-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-md text-sm font-medium hover:border-indigo-400">High-Tech</button>
-                <button onclick="filterBrands('classic')" class="filter-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-md text-sm font-medium hover:border-indigo-400">Classic Value</button>
-                <button onclick="filterBrands('social')" class="filter-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-md text-sm font-medium hover:border-indigo-400">Social/Fun</button>
+                <button onclick="filterBrands('all', event)" class="filter-btn active bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium">All</button>
+                <button onclick="filterBrands('tech', event)" class="filter-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-md text-sm font-medium hover:border-indigo-400">High-Tech</button>
+                <button onclick="filterBrands('classic', event)" class="filter-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-md text-sm font-medium hover:border-indigo-400">Classic Value</button>
+                <button onclick="filterBrands('social', event)" class="filter-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-md text-sm font-medium hover:border-indigo-400">Social/Fun</button>
             </div>
         </div>
 
@@ -203,6 +203,26 @@
 
     <script>
         // Brand Data
+        const fallbackBrandFiles = [
+            'bb-hotels.json',
+            'citizenm.json',
+            'easyhotel.json',
+            'hotela.json',
+            'hotelb.json',
+            'hotelc.json',
+            'hoteld.json',
+            'hotele.json',
+            'hotelf.json',
+            'hotelg.json',
+            'hotelh.json',
+            'hoteli.json',
+            'motel-one.json',
+            'moxy.json',
+            'nh-hotels.json',
+            'premier-inn.json',
+            'yotel.json',
+            'z-hotels.json'
+        ];
         let brands = [];
 
         async function loadBrandData() {
@@ -219,11 +239,8 @@
                 const fileMatches = [...listingHtml.matchAll(/href="([^"]+\\.json)"/g)].map(match => match[1]);
                 const uniqueFiles = [...new Set(fileMatches)];
 
-                if (!uniqueFiles.length) {
-                    throw new Error('No brand JSON files found in data/.');
-                }
-
-                const dataRequests = uniqueFiles.map(file => {
+                const filesToFetch = uniqueFiles.length ? uniqueFiles : fallbackBrandFiles;
+                const dataRequests = filesToFetch.map(file => {
                     const normalized = file.startsWith('data/') ? file : `data/${file}`;
                     return fetch(normalized).then(response => {
                         if (!response.ok) {
@@ -236,8 +253,19 @@
                 return await Promise.all(dataRequests);
             } catch (error) {
                 console.error(error);
-                grid.innerHTML = '<p class="text-rose-600">Unable to load brand data. Check that JSON files exist in the data folder.</p>';
-                return [];
+                try {
+                    const dataRequests = fallbackBrandFiles.map(file => fetch(`data/${file}`).then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Unable to load data/${file}.`);
+                        }
+                        return response.json();
+                    }));
+                    return await Promise.all(dataRequests);
+                } catch (fallbackError) {
+                    console.error(fallbackError);
+                    grid.innerHTML = '<p class="text-rose-600">Unable to load brand data. Check that JSON files exist in the data folder.</p>';
+                    return [];
+                }
             }
         }
 
@@ -269,15 +297,17 @@
             lucide.createIcons();
         }
 
-        function filterBrands(category) {
+        function filterBrands(category, event) {
             // Update button styles
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.classList.remove('bg-indigo-600', 'text-white', 'active');
                 btn.classList.add('bg-white', 'text-slate-600', 'border-slate-200');
             });
             
-            event.currentTarget.classList.remove('bg-white', 'text-slate-600', 'border-slate-200');
-            event.currentTarget.classList.add('bg-indigo-600', 'text-white', 'active');
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.remove('bg-white', 'text-slate-600', 'border-slate-200');
+                event.currentTarget.classList.add('bg-indigo-600', 'text-white', 'active');
+            }
             
             renderBrands(category);
         }
