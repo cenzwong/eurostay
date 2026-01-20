@@ -72,10 +72,10 @@
                 <p class="text-slate-500">Filter by the type of experience you need.</p>
             </div>
             <div id="filters" class="flex flex-wrap gap-2">
-                <button onclick="filterBrands('all')" class="filter-btn active bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium">All</button>
-                <button onclick="filterBrands('tech')" class="filter-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-md text-sm font-medium hover:border-indigo-400">High-Tech</button>
-                <button onclick="filterBrands('classic')" class="filter-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-md text-sm font-medium hover:border-indigo-400">Classic Value</button>
-                <button onclick="filterBrands('social')" class="filter-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-md text-sm font-medium hover:border-indigo-400">Social/Fun</button>
+                <button onclick="filterBrands('all', event)" class="filter-btn active bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium">All</button>
+                <button onclick="filterBrands('tech', event)" class="filter-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-md text-sm font-medium hover:border-indigo-400">High-Tech</button>
+                <button onclick="filterBrands('classic', event)" class="filter-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-md text-sm font-medium hover:border-indigo-400">Classic Value</button>
+                <button onclick="filterBrands('social', event)" class="filter-btn bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-md text-sm font-medium hover:border-indigo-400">Social/Fun</button>
             </div>
         </div>
 
@@ -210,28 +210,26 @@
             grid.innerHTML = '<p class="text-slate-500">Loading brands...</p>';
 
             try {
-                const listingResponse = await fetch('data/');
+                const listingResponse = await fetch('https://api.github.com/repos/cenzwong/eurostay/contents/data');
                 if (!listingResponse.ok) {
-                    throw new Error('Unable to load data directory.');
+                    throw new Error('Unable to load data directory listing.');
                 }
 
-                const listingHtml = await listingResponse.text();
-                const fileMatches = [...listingHtml.matchAll(/href="([^"]+\\.json)"/g)].map(match => match[1]);
-                const uniqueFiles = [...new Set(fileMatches)];
+                const listing = await listingResponse.json();
+                const jsonFiles = listing
+                    .filter(item => item.type === 'file' && item.name.endsWith('.json'))
+                    .map(item => item.name);
 
-                if (!uniqueFiles.length) {
+                if (!jsonFiles.length) {
                     throw new Error('No brand JSON files found in data/.');
                 }
 
-                const dataRequests = uniqueFiles.map(file => {
-                    const normalized = file.startsWith('data/') ? file : `data/${file}`;
-                    return fetch(normalized).then(response => {
-                        if (!response.ok) {
-                            throw new Error(`Unable to load ${normalized}.`);
-                        }
-                        return response.json();
-                    });
-                });
+                const dataRequests = jsonFiles.map(file => fetch(`data/${file}`).then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Unable to load data/${file}.`);
+                    }
+                    return response.json();
+                }));
 
                 return await Promise.all(dataRequests);
             } catch (error) {
@@ -269,15 +267,17 @@
             lucide.createIcons();
         }
 
-        function filterBrands(category) {
+        function filterBrands(category, event) {
             // Update button styles
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.classList.remove('bg-indigo-600', 'text-white', 'active');
                 btn.classList.add('bg-white', 'text-slate-600', 'border-slate-200');
             });
             
-            event.currentTarget.classList.remove('bg-white', 'text-slate-600', 'border-slate-200');
-            event.currentTarget.classList.add('bg-indigo-600', 'text-white', 'active');
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.remove('bg-white', 'text-slate-600', 'border-slate-200');
+                event.currentTarget.classList.add('bg-indigo-600', 'text-white', 'active');
+            }
             
             renderBrands(category);
         }
