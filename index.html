@@ -203,80 +203,43 @@
 
     <script>
         // Brand Data
-        const brands = [
-            {
-                name: "Yotel",
-                category: "tech",
-                vibe: "Futuristic Cabin",
-                desc: "Inspired by first-class airline cabins. High efficiency, purple lighting, and SmartBeds that fold to save space.",
-                price: "€€",
-                icon: "cpu"
-            },
-            {
-                name: "citizenM",
-                category: "tech",
-                vibe: "Affordable Luxury",
-                desc: "Stylish, boutique-style hotels where everything in the room is controlled via a single iPad.",
-                price: "€€€",
-                icon: "smartphone"
-            },
-            {
-                name: "Premier Inn",
-                category: "classic",
-                vibe: "British Reliability",
-                desc: "The UK's largest brand. Consistent quality, legendary beds, and very family-friendly policies.",
-                price: "€€",
-                icon: "shield-check"
-            },
-            {
-                name: "Motel One",
-                category: "social",
-                vibe: "Design Budget",
-                desc: "A German powerhouse known for turquoise decor, high-end lobbies, and premium gin bars.",
-                price: "€€",
-                icon: "glass-water"
-            },
-            {
-                name: "easyHotel",
-                category: "classic",
-                vibe: "Ultimate Budget",
-                desc: "No frills, orange branding, and pay-as-you-go services. Perfect for just a place to sleep.",
-                price: "€",
-                icon: "wallet"
-            },
-            {
-                name: "Moxy",
-                category: "social",
-                vibe: "Playful & Bold",
-                desc: "Marriott's millennial brand. Check-in is at the bar, and the lobbies are designed for parties.",
-                price: "€€",
-                icon: "party-popper"
-            },
-            {
-                name: "B&B Hotels",
-                category: "classic",
-                vibe: "Functional Standard",
-                desc: "Fast-growing European chain. Minimalist, modern rooms with easy self-check-in kiosks.",
-                price: "€",
-                icon: "check-circle"
-            },
-            {
-                name: "NH Hotels",
-                category: "classic",
-                vibe: "Urban Business",
-                desc: "Found in city centers. Reliable, quiet, and professional. Great for business travelers on a budget.",
-                price: "€€€",
-                icon: "briefcase"
-            },
-            {
-                name: "Z Hotels",
-                category: "tech",
-                vibe: "Urban Compact",
-                desc: "Small but perfectly formed rooms in the heart of London and other major UK cities.",
-                price: "€€",
-                icon: "layout-grid"
+        let brands = [];
+
+        async function loadBrandData() {
+            const grid = document.getElementById('brandGrid');
+            grid.innerHTML = '<p class="text-slate-500">Loading brands...</p>';
+
+            try {
+                const listingResponse = await fetch('data/');
+                if (!listingResponse.ok) {
+                    throw new Error('Unable to load data directory.');
+                }
+
+                const listingHtml = await listingResponse.text();
+                const fileMatches = [...listingHtml.matchAll(/href="([^"]+\\.json)"/g)].map(match => match[1]);
+                const uniqueFiles = [...new Set(fileMatches)];
+
+                if (!uniqueFiles.length) {
+                    throw new Error('No brand JSON files found in data/.');
+                }
+
+                const dataRequests = uniqueFiles.map(file => {
+                    const normalized = file.startsWith('data/') ? file : `data/${file}`;
+                    return fetch(normalized).then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Unable to load ${normalized}.`);
+                        }
+                        return response.json();
+                    });
+                });
+
+                return await Promise.all(dataRequests);
+            } catch (error) {
+                console.error(error);
+                grid.innerHTML = '<p class="text-rose-600">Unable to load brand data. Check that JSON files exist in the data folder.</p>';
+                return [];
             }
-        ];
+        }
 
         function renderBrands(filter = 'all') {
             const grid = document.getElementById('brandGrid');
@@ -320,7 +283,8 @@
         }
 
         // Initialize
-        window.onload = () => {
+        window.onload = async () => {
+            brands = await loadBrandData();
             renderBrands();
             lucide.createIcons();
         };
