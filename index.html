@@ -304,10 +304,10 @@
         }
 
         // Initialize
-        window.onload = async () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             brands = await loadBrandData();
             renderBrands();
-        };
+        });
     </script>
 </body>
 </html>
