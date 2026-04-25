@@ -262,12 +262,12 @@
 
         function renderBrands(filter = 'all') {
             const grid = document.getElementById('brandGrid');
-            grid.innerHTML = '';
             
             const filtered = filter === 'all' ? brands : brands.filter(b => b.category === filter);
             
+            let brandsHTML = '';
             filtered.forEach(brand => {
-                const card = `
+                brandsHTML += `
                     <div class="hotel-card bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col h-full">
                         <div class="flex justify-between items-start mb-4">
                             <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
@@ -283,8 +283,8 @@
                         </button>
                     </div>
                 `;
-                grid.innerHTML += card;
             });
+            grid.innerHTML = brandsHTML;
             lucide.createIcons();
         }
 
